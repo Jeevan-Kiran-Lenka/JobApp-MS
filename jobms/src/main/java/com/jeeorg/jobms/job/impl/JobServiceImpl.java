@@ -4,10 +4,16 @@ package com.jeeorg.jobms.job.impl;
 import com.jeeorg.jobms.job.Job;
 import com.jeeorg.jobms.job.JobRepository;
 import com.jeeorg.jobms.job.JobService;
+import com.jeeorg.jobms.job.dto.JobWithCompanyDTO;
+import com.jeeorg.jobms.job.external.Company;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import com.jeeorg.jobms.job.dto.JobWithCompanyDTO;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class JobServiceImpl implements JobService {
@@ -19,9 +25,25 @@ public class JobServiceImpl implements JobService {
         this.jobRepository = jobRepository;
     }
 
+
+    private JobWithCompanyDTO convertToDTo(Job job){
+        JobWithCompanyDTO jobWithCompanyDTO = new JobWithCompanyDTO();
+        jobWithCompanyDTO.setJob(job);
+        RestTemplate restTemplate = new RestTemplate();
+        Company company = restTemplate.getForObject(
+                "http://localhost:8081/companies/" + job.getCompanyId(),
+                Company.class);
+        jobWithCompanyDTO.setCompany(company);
+        return jobWithCompanyDTO;
+    }
+
     @Override
-    public List<Job> findAll() {
-        return jobRepository.findAll();
+    public List<JobWithCompanyDTO> findAll() {
+
+        List<Job> jobs = jobRepository.findAll();
+        List<JobWithCompanyDTO> jobWithCompanyDTOS = new ArrayList<>();
+
+        return jobs.stream().map(this::convertToDTo).collect(Collectors.toList());
     }
 
     @Override
